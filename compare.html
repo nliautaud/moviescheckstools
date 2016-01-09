@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Compare Trakt.tv & IMDb movies ratings exports</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+	}
+	html,
+	body {
+		margin: 0;
+		height: 100%;
+	}
+	body {
+		padding: 1em;
+		font: 300 1em/1.2 monospace;
+	}
+	body, a {
+		color: black;
+	}
+	#zone {
+		margin: 0;
+		padding: 1em;
+		border: 1px solid silver;
+		overflow: auto;
+		height: 100%;
+	}
+	</style>
+</head>
+<body>
+	<div id="zone">Drop movies ratings export files from <a href="http://eclectide.com/blog/2014/08/12/trakt-tv-backup">trakt-tv-backup</a> or IMDb.
+
+	<script type="text/javascript">
+	Array.prototype.diff = function(a) {
+	    return this.filter(function(i) {return a.indexOf(i) < 0;});
+	};
+
+	var imdburl = 'http://www.imdb.com/title/';
+	var zone = document.getElementById('zone');
+
+	function process (files) {
+		zone.innerHTML = 'Process...';
+
+		// list ids
+		for (var i = 0; i < files.length; i++) {
+			files[i].ids = files[i].content.match(/"tt\d+"/g);
+		};
+
+		// process
+		var output = '<ul>';
+		var repr = function(arr) {
+			for (var i = 0; i < arr.length; i++) {
+				var id = arr[i].replace(/"/g, '');
+				arr[i] = '<a href="'+imdburl+id+'">'+id+'</a>';
+			};
+			return arr;
+		}
+		for (var i = 0; i < files.length; i++) {
+			var f = files[i];
+			if(!f.ids) continue;
+			output += '<li>'+f.name+'<ul>';
+			output += '<li>'+ f.ids.length + ' items';
+			for (var j = 0; j < files.length; j++) {
+				var other = files[j];
+				if(i==j || !other.ids) continue;
+				var difflist = repr(f.ids.diff(other.ids));
+				output += '<li>'+difflist.length+' items not in '+ other.name + ' : ';
+				output += difflist.join(', ');
+			}
+			output += '</ul>';
+		};
+		output += '</ul>';
+
+		zone.innerHTML = output;
+	}
+
+
+	function handleDrop(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+
+		var files = evt.dataTransfer.files;
+
+		readFiles = function (i) {
+			var r = new FileReader();
+			r.onload = function(e) {
+				files[i].content = e.target.result;
+				if(files[i+1] !== undefined)
+					readFiles(i+1);
+				else
+					process(files);
+			};
+		  	r.readAsText(files[i]);
+		}
+		readFiles(0);
+	}
+
+	function handleDragOver(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+	}
+
+	zone.addEventListener('dragover', handleDragOver, false);
+	zone.addEventListener('drop', handleDrop, false);
+	</script>
+</body>
+</html>
