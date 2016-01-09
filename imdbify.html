@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Trakt.tv movies ratings export to IMDb-like CSV</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+	}
+	html,
+	body {
+		margin: 0;
+		height: 100%;
+	}
+	body {
+		padding: 1em;
+	}
+	body, a {
+		color: black;
+	}
+	#zone {
+		margin: 0;
+		padding: 1em;
+		border: 1px solid silver;
+		overflow: auto;
+		height: 100%;
+		word-break: break-all;
+	}
+	</style>
+</head>
+<body>
+	<pre id="zone">
+1. Get your trakt.tv data from <a href="http://eclectide.com/blog/2014/08/12/trakt-tv-backup">trakt-tv-backup</a>
+2. Drop here ratings_movies.txt
+-> Get a IMDb-like CSV format, save-it.
+-> Feed the service asking for a IMDb export file (ex. icheckmovies).</pre>
+
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.1/moment.min.js"></script>
+	<script type="text/javascript">
+
+	var zone = document.getElementById('zone');
+	var traktdata;
+	var processedCount = 0;
+	var data = {};
+
+	function selectText(element) {
+	    var doc = document;
+
+	    if (doc.body.createTextRange) { // ms
+	        var range = doc.body.createTextRange();
+	        range.moveToElementText(element);
+	        range.select();
+	    } else if (window.getSelection) { // moz, opera, webkit
+	        var selection = window.getSelection();
+	        var range = doc.createRange();
+	        range.selectNodeContents(element);
+	        selection.removeAllRanges();
+	        selection.addRange(range);
+	    }
+	}
+
+
+	function httpGetAsync(theUrl, callback) {
+	    var xmlHttp = new XMLHttpRequest();
+	    xmlHttp.onreadystatechange = function() {
+	        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+	            callback(xmlHttp.responseText);
+	    }
+	    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+	    xmlHttp.send(null);
+	}
+	function httpCallback(response) {
+		response = JSON.parse(response);
+		for (var attr in response) {
+			data[response.imdbID][attr] = response[attr];
+		}
+		if(++processedCount == traktdata.length) finalize();
+	}
+
+	function finalize(response) {
+		var csvoutput = '"position","const","created","modified","description","Title","Title type","Directors","You rated","IMDb Rating","Runtime (mins)","Year","Genres","Num. Votes","Release Date (month/day/year)","URL"';
+		for (id in data) {
+			var d = data[id];
+			csvoutput += '\n';
+			csvoutput += '"' + d.position + '",';
+			csvoutput += '"' + id + '",';
+			csvoutput += '"' + d.created + '",';
+			csvoutput += '"","",';
+			csvoutput += '"' + d.Title + '",';
+			csvoutput += '"Feature Film",';
+			csvoutput += '"' + d.Director + '",';
+			csvoutput += '"' + d.yourrating + '",';
+			csvoutput += '"' + d.imdbRating + '",';
+			csvoutput += '"' + d.Runtime.replace(' min', '') + '",';
+			csvoutput += '"' + d.Year + '",';
+			csvoutput += '"' + d.Genre + '",';
+			csvoutput += '"' + d.imdbVotes.replace(',','') + '",';
+			csvoutput += '"' + moment(new Date(d.Released)).format('YYYY-MM-DD') + '",';
+			csvoutput += '"http://www.imdb.com/title/' + id + '/"';
+		};
+
+		zone.innerHTML = csvoutput;
+		selectText(zone);
+	}
+
+	function processRatings (ratings) {
+		zone.innerHTML = 'Process...';
+		traktdata = JSON.parse(ratings);
+		for (var i = 0; i < traktdata.length; i++) {
+			var d = traktdata[i];
+			data[d.movie.ids.imdb] = {
+				position: i+1,
+				created: moment(new Date(d.rated_at)).format('ddd MMM  D hh:mm:ss YYYY'),
+				yourrating: d.rating
+			};
+			httpGetAsync('http://www.omdbapi.com/?i='+d.movie.ids.imdb, httpCallback);
+		};
+	}
+
+
+	function handleDrop(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+
+		var file = evt.dataTransfer.files[0];
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			processRatings(e.target.result);
+		};
+      	reader.readAsText(file);
+	}
+
+	function handleDragOver(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+	}
+
+	zone.addEventListener('dragover', handleDragOver, false);
+	zone.addEventListener('drop', handleDrop, false);
+	</script>
+</body>
+</html>
