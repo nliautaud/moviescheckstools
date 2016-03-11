@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Trakt.tv movies ratings export to IMDb-like CSV</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+	}
+	html,
+	body {
+		margin: 0;
+		height: 100%;
+	}
+	body {
+		padding: 1em;
+		font: 1em/1.2 monospace;
+	}
+	body, a {
+		color: black;
+	}
+	#zone {
+		margin: 0;
+		padding: 1em;
+		border: 1px solid silver;
+		overflow: auto;
+		height: 100%;
+		word-break: break-all;
+	}
+	</style>
+</head>
+<body>
+	<div id="zone"></div>
+
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.1/moment.min.js"></script>
+	<script type="text/javascript">
+
+	var zone = document.getElementById('zone');
+	var processedCount = 0;
+	var start = 150000;
+	var stop = 230000;
+	var toProcess = stop-start;
+	var data;
+	var corsproxy = 'https://crossorigin.me/';
+
+	function handleDrop(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+
+		var file = evt.dataTransfer.files[0];
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			getAllocineRatings(e.target.result);
+		};
+      	reader.readAsText(file);
+	}
+
+	function handleDragOver(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+	}
+
+	function getAllocineRatings (ratings) {
+		try {
+			data = JSON.parse(ratings);
+		} catch(e) {
+			data = [];
+		}
+		var known = [];
+		for (i in data) known.push(data[i].imdbid);
+
+		for (var i = start; i < stop+1; i++) {
+			if(i in known) continue;
+
+			// search allocine film by ID
+			var url = 'http://www.allocine.fr/film/fichefilm_gen_cfilm='+i+'.html';
+			httpGetAsync(corsproxy+url, function(response)
+			{
+				var title = response.match('<title>(.*?) - film ');
+				if(!title) return;
+				title = title[1];
+				console.log('got title');
+
+				// get imdb ID by name search
+				var url = 'http://www.imdb.com/xml/find?json=1&tt=on&nr=on&q='+title;
+				httpGetAsync(corsproxy+url, function(response)
+				{
+					// parse IMDB ID
+					r = JSON.parse(response);
+					if(r === undefined) return;
+					var item;
+					if(r.title_exact && r.title_exact.length > 0)
+						item = r.title_exact[0];
+					else if(r.title_substring && r.title_substring.length > 0)
+						item = r.title_substring[0];
+					else if(r.title_approx && r.title_approx.length > 1)
+						item = r.title_approx[0];
+					else return;
+
+					console.log('got imdb id');
+
+					// store result
+					data.push({
+						allocine_id:i,
+						imdb_title:item.id,
+					});
+				});
+			});
+		}
+	}
+
+	function update () {
+		zone.innerHTML = JSON.stringify(data);
+		setTimeout(update, 5000);
+	}
+
+	function httpGetAsync(url, callback) {
+		var xhr = new XMLHttpRequest();
+		xhr.onreadystatechange = function() {
+			if (xhr.readyState == 4 && xhr.status == 200)
+				callback(xhr.responseText);
+		}
+		xhr.open('GET', url, true);
+		xhr.send(null);
+	}
+
+	zone.addEventListener('dragover', handleDragOver, false);
+	zone.addEventListener('drop', handleDrop, false);
+	update();
+
+	</script>
+</body>
+</html>

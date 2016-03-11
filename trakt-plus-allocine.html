@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Trakt.tv movies ratings export to IMDb-like CSV</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+	}
+	html,
+	body {
+		margin: 0;
+		height: 100%;
+	}
+	body {
+		padding: 1em;
+		font: 1em/1.2 monospace;
+	}
+	body, a {
+		color: black;
+	}
+	#json,
+	#analysis {
+		margin: 0;
+		padding: 1em;
+		border: 1px solid silver;
+		overflow: auto;
+		height: 50%;
+	}
+	#json {
+		word-break: break-all;
+    	white-space: pre-wrap;
+	}
+	#analysis {
+
+	}
+	</style>
+</head>
+<body>
+	<pre id="json">
+		<p>Drop here a Trakt.tv backup file from <a href="http://eclectide.com/blog/2014/08/12/trakt-tv-backup">trakt-tv-backup</a>, and the JSON will be extended with Imdb Ratings, Allociné IDs and Titles (if found), and press ratings (if existing).
+		<p>IMDb rating is retrieved trough omdbapi.com, and requests are using crossorigin.me.
+	</pre>
+	<pre id="analysis"></pre>
+
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.1/moment.min.js"></script>
+	<script type="text/javascript">
+
+	var jsonzone = document.getElementById('json');
+	var analysiszone = document.getElementById('analysis');
+	var change = false;
+	var data = {};
+	var url_proxy = 'https://crossorigin.me/',
+		url_omdb = 'http://www.omdbapi.com/?i=',
+		url_allocine_search = 'http://www.allocine.fr/recherche/1/?q=';
+
+	function handleDrop(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+
+		var file = evt.dataTransfer.files[0];
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			traktPlusAllocine(e.target.result);
+		};
+      	reader.readAsText(file);
+	}
+
+	function handleDragOver(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+	}
+
+
+	function traktPlusAllocine (input) {
+		data = JSON.parse(input);
+		console.log(data.length+' elements loaded');
+
+		for (i in data) {
+			var obj = data[i],
+				data_item = data[i][data[i].type];
+
+			if(data[i].rating_imdb == undefined) {
+				httpGetAsync(url_omdb + data_item.ids.imdb, i, findImdbRating);
+			}
+
+			if(data_item.ids.allocine == undefined) {
+				var title = data_item.title;
+				title = title.replace(/[-.:_,]/g, ' ');
+				title = title.replace(/\s+/g, '+');
+				var url = url_proxy + url_allocine_search + title;
+				httpGetAsync(url, i, findAllocineID);
+			}
+		}
+		change = true;
+	}
+
+	function findImdbRating(data_id, response) {
+		// process OMDB response to get IMDB rating
+		response = JSON.parse(response);
+		if(!response.imdbRating) return;
+
+		data[data_id].rating_imdb = response.imdbRating;
+		change = true;
+
+		console.log(response.Title, 'is rated', response.imdbRating, 'on imdb');
+	}
+
+	function findAllocineID(data_id, response) {
+		// process Allociné search response to get Allociné movie infos
+		var data_item = data[data_id][data[data_id].type];
+
+		var el = document.createElement('html');
+		el.innerHTML = response;
+
+		var results = el.querySelectorAll('.colcontent td.totalwidth'),
+			allocine_id,
+			allocine_title;
+
+		for (var i = 0; i < results.length; i++) {
+			var r = results[i],
+				date = r.querySelector('.fs11').textContent.substr(0,5);
+
+			if(Math.abs(date-data_item.year) < 2) {
+				var link = r.querySelector('a');
+				allocine_id = link.href.match(/\d+/)[0];
+				allocine_title = link.textContent.replace('\n','');
+				break;
+			}
+		}
+		if(allocine_id == undefined) return;
+
+		data_item.ids.allocine = allocine_id;
+		data_item.title_allocine = allocine_title;
+		change = true;
+
+		console.log(data_item.title, 'allocine ID is', allocine_id)
+
+		// load Allociné rating page trough ID
+
+		var press_url = 'http://www.allocine.fr/film/fichefilm-'+allocine_id+'/critiques/presse/';
+		httpGetAsync(url_proxy + press_url, data_id, findAllocineRatings);
+	}
+
+	function findAllocineRatings(data_id, response) {
+		// Allociné Press ratings
+		var data_item = data[data_id][data[data_id].type];
+
+		var el = document.createElement( 'html' );
+		el.innerHTML = response;
+		var items = el.querySelectorAll('.reviews-press-comment .item');
+		if(items.length == 0) return;
+
+		console.log(data_item.title, 'got', items.length, 'allocine ratings')
+
+		data[data_id].rating_allocine = {};
+		[].forEach.call(items, function(i) {
+			var press = i.querySelector('.title span').textContent;
+			var note = i.querySelector('.stareval-stars').classList[1][1];
+			data[data_id].rating_allocine[press] = note;
+		});
+		change = true;
+
+	}
+
+	function update() {
+		setTimeout(update, 3000);
+		if(!change) return;
+		change = false;
+
+		jsonzone.innerHTML = JSON.stringify(data, null, '\t');
+		analysiszone.innerHTML = JSON.stringify(compare(), null, '\t');
+	}
+
+	function compare() {
+		var comparison = {};
+		for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			if(item.rating == undefined) continue;
+
+			if(!comparison.imdb) {
+				comparison.imdb = {};
+				comparison.imdb.value = 0;
+				comparison.imdb.count = 0;
+			}
+			var imdb_rating = parseInt(item.rating_imdb);
+			if(imdb_rating) {
+				comparison.imdb.value += Math.abs(item.rating - imdb_rating);
+				comparison.imdb.count++;
+			}
+
+			for(author in item.rating_allocine) {
+				if(!comparison[author]) {
+					comparison[author] = {};
+					comparison[author].value = 0;
+					comparison[author].count = 0;
+				}
+				comparison[author].value += Math.abs(item.rating - 2 * parseInt(item.rating_allocine[author]));
+				comparison[author].count++;
+			}
+		}
+		var output = [];
+		for(i in comparison) {
+			comparison[i].value /= comparison[i].count;
+			output.push({
+				author: i,
+				value: comparison[i].value,
+				count: comparison[i].count
+			});
+		}
+		return output;
+	}
+
+
+	function httpGetAsync(url, i, callback) {
+	    var xmlHttp = new XMLHttpRequest();
+	    xmlHttp.onreadystatechange = function() {
+	        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+	            callback(i, xmlHttp.responseText);
+	    }
+	    xmlHttp.open("GET", url, true);
+	    xmlHttp.send(null);
+	    console.log('-> XHR', url);
+	}
+
+
+	jsonzone.addEventListener('dragover', handleDragOver, false);
+	jsonzone.addEventListener('drop', handleDrop, false);
+	update();
+
+	</script>
+</body>
+</html>
