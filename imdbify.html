@@ -92,7 +92,7 @@
 		for (var i = 0; i < json.length; i++) {
 			var entry = json[i],
 				date = entry.rated_at || entry.last_watched_at;
-			if(date && entry.movie)
+			if(date && entry.movie && entry.movie.ids.imdb)
 				data[entry.movie.ids.imdb] = {
 					position: i+1,
 					created: moment(new Date(date)).format('ddd MMM D hh:mm:ss YYYY'),
