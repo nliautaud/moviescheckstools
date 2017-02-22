@@ -1,37 +1,37 @@
 # moviescheckstools
 
-List of tools and tips used to help importing/exporting movie lists between tracking services without API or simple binding.
+Import/export movie lists between movies database services without API or simple binding.
 
-|Service|Import|Export|API|
-|----|:----:|:----:|:-:|
-|[IMDb](http://imdb.com)|no|CSV|partial|
-|[trakt.tv](http://trakt.tv)|no|no|yes|
-|[SensCritique](http://senscritique.com)|IMDb CSV|no|no|
-|[icheckmovies](http://icheckmovies.com)|IMDb CSV|no|no|
-|[critiker](http://criticker.com)|IMDb CSV|no|no|no|
+| service | import | export | API | tooled import | tooled export |
+|---------|:------:|:------:|:---:|:-------------:|:-------------:|
+| [IMDb](http://imdb.com)  | no | IMDb CSV | partial | ? | / |
+| [trakt.tv](http://trakt.tv) | no | no | yes | [TraktRater][traktrater] | [trakt.tv backup][ttvbackup] |
+| [SensCritique](http://senscritique.com) | no | no | no | [imdb2senscritique][imdb2sc] | ? |
+| [ICheckMovies](http://icheckmovies.com) | [IMDb CSV][icmexp] | paid account | no | / | (see below) |
+| [criticker](http://criticker.com) | [IMDb CSV](crtexp) | no | no | / | ? |
 
 [imdbify]: https://github.com/nliautaud/imdbify
 [imdb2sc]: https://github.com/nliautaud/imdb2senscritique
 [ttvbackup]: http://eclectide.com/blog/2014/08/12/trakt-tv-backup/
 [traktrater]: https://github.com/damienhaynes/TraktRater
 
-Tools :
+[icmexp]: http://www.icheckmovies.com/import/imdbvotes
+[crtexp]: http://www.criticker.com/?im
 
-- [imdbify][imdbify] : convert a movie list to an IMDb CSV file.
-- [imdb2senscritique][imdb2sc] : import movies ratings on SensCritique from a IMDb CSV file.
-- [trakt.tv backup][ttvbackup] : export trakt.tv data.
-- [TraktRater][traktrater] : import movies ratings on trakt.tv from a IMDb CSV file, TVDb or TMDb.
+
+[imdbify][imdbify] convert a movie list to an IMDb CSV file, thus may be used between the site/tool export and site/tool import to fill the gap between the majority of them.
 
 Examples :
+
 - **To export from IMDb to SensCritique**, export a CSV file by using "*Export this List*" on IMDb, then import the data in SensCritique with [imdb2senscritique][imdb2sc].
 - **To export from trakt.tv to SensCritique**, export trakt.tv data with [trakt.tv backup][ttvbackup], convert a file (ex. ``ratings_movies.txt``) to IMDb CSV format with [imdbify][imdbify], then import the data in SensCritique with [imdb2senscritique][imdb2sc].
-- **To export from icheckmovies to trakt.tv, criticker or SensCritique**, export icheckmovie data (see below), convert to IMDb CSV format with [imdbify][imdbify], then import to trakt.tv with [TraktRater][traktrater] or to criticker (www.criticker.com/?im) or SensCritique with [imdb2senscritique][imdb2sc].
+- **To export from ICheckMovies to trakt.tv, criticker or SensCritique**, export ICheckMovies data (see below), convert to IMDb CSV format with [imdbify][imdbify], then import to trakt.tv with [TraktRater][traktrater] or to criticker (www.criticker.com/?im) or SensCritique with [imdb2senscritique][imdb2sc].
 
 ## other tools
 
 - [compare](https://rawgit.com/nliautaud/moviescheckstools/master/compare.html) : Drop several export files from IMDb, trakt.tv backup, or any file containing IMDb ID's surrounded by double quotes to compare their IMDb IDs. 
 
-## icheckmovies export
+## icheckmovies scrapping export
 
 Create a CSV export of the checked movies in icheckmovies, as a list of IMDB urls.
 
