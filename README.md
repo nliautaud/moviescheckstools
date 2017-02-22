@@ -4,11 +4,11 @@ Import/export movie lists between movies database services without API or simple
 
 | service | import | export | API | tooled import | tooled export |
 |---------|:------:|:------:|:---:|:-------------:|:-------------:|
-| [IMDb](http://imdb.com)  | no | IMDb CSV | partial | ? | / |
+| [IMDb](http://imdb.com)  | no | IMDb CSV | partial | ? | (not needed) |
 | [trakt.tv](http://trakt.tv) | no | no | yes | [TraktRater][traktrater] | [trakt.tv backup][ttvbackup] |
 | [SensCritique](http://senscritique.com) | no | no | no | [imdb2senscritique][imdb2sc] | ? |
-| [ICheckMovies](http://icheckmovies.com) | [IMDb CSV][icmexp] | paid account | no | / | (see below) |
-| [criticker](http://criticker.com) | [IMDb CSV](crtexp) | no | no | / | ? |
+| [ICheckMovies](http://icheckmovies.com) | [IMDb CSV][icmexp] | paid account | no | (not needed) | (see below) |
+| [criticker](http://criticker.com) | [IMDb CSV](crtexp) | no | no | (not needed) | ? |
 
 [imdbify]: https://github.com/nliautaud/imdbify
 [imdb2sc]: https://github.com/nliautaud/imdb2senscritique
