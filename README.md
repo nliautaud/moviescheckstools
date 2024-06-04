@@ -12,7 +12,7 @@ Import/export movie lists between movies database services without API or simple
 | [Letterboxed](http://letterboxed.com) | paid | yes | no | ? | (not needed) |
 
 [imdbify]: https://github.com/nliautaud/imdbify
-[imdb2sc]: https://github.com/nliautaud/imdb2senscritique
+[imdb2sc]: https://github.com/mukurokudo/imdb2senscritique
 [ttvbackup]: https://darekkay.com/blog/trakt-tv-backup/
 [traktrater]: https://github.com/damienhaynes/TraktRater
 
