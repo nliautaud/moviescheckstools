@@ -13,7 +13,7 @@ Import/export movie lists between movies database services without API or simple
 
 [imdbify]: https://github.com/nliautaud/imdbify
 [imdb2sc]: https://github.com/nliautaud/imdb2senscritique
-[ttvbackup]: http://eclectide.com/blog/2014/08/12/trakt-tv-backup/
+[ttvbackup]: https://darekkay.com/blog/trakt-tv-backup/
 [traktrater]: https://github.com/damienhaynes/TraktRater
 
 [icmexp]: http://www.icheckmovies.com/import/imdbvotes
